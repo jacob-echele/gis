@@ -1,0 +1,33 @@
+library(dplyr)
+library(here)
+library(readr)
+library(tidyr)
+library(stringr)
+library(janitor)
+library(plotly)
+library(tmap)
+library(tmaptools)
+library(sf)
+library(ggplot2)
+library(osmdata)
+library(Rcpp)
+library(CRAN)
+library(OpenStreetMap)
+install.packages("countrycode")
+install.packages("rjson")
+library(rjson)
+library(countrycode)
+library(tmap)
+library(tmaptools)
+library(usethis)
+help(countrycode)
+here::here
+
+world_data_json <- fromJSON(file = "hdr-data.json")
+
+world_data_2010 <- read.csv("HDR25_Statistical_Annex_GII_Table_2010_CSV.csv")
+sapply(world_data_2010, typeof)
+world_data_2019 <- read.csv("HDR25_Statistical_Annex_GII_Table_2019_CSV.csv")
+
+world_data_2010 <- world_data_2010%>%
+  mutate(across(everything(), ~ na_if(., "NULL")))
