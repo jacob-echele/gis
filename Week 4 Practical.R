@@ -4,3 +4,6 @@ library(usethis)
 #new test
 
 #why hellow there
+
+install.packages("reticulate")
+library(reticulate)
