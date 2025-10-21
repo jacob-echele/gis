@@ -1,1 +1,5 @@
 #a test of git and github
+#test 2 for github
+
+car = "hi"
+print(car)
