@@ -1,27 +1,13 @@
 library(dplyr)
 library(here)
-library(readr)
-library(tidyr)
-library(stringr)
 library(janitor)
-library(plotly)
 library(tmap)
 library(tmaptools)
 library(sf)
 library(ggplot2)
-library(osmdata)
-library(Rcpp)
-library(CRAN)
-library(OpenStreetMap)
-library(rjson)
 library(countrycode)
-library(tmap)
-library(tmaptools)
-library(usethis)
-library(geojsonR)
 library(tidyverse)
-help(countrycode)
-setwd("C:/Users/jacob/OneDrive/Desktop/School/7- Graduate School/Term 1/Geographic Information Systems and Science/Week 4/Week 4 Practical/gis/gis")
+library(usethis)
 
 #loading in data
 world_data <- read_csv("HDR25_Composite_indices_complete_time_series.csv",
@@ -29,7 +15,6 @@ world_data <- read_csv("HDR25_Composite_indices_complete_time_series.csv",
                                          locale = locale(encoding = "latin1"))
 
 #loading in geopackage
-
 world_outline <- st_read("World_Countries_(Generalized)_9029012925078512962.geojson")%>%
   select(ISO)
 plot(world_outline)
@@ -100,7 +85,7 @@ GGII_merged_world_difference <- ggplot(merged_world_difference) +
     na.value = "grey", 
     name = "GDI Difference",
     labels = scales::label_number(accuracy = 0.01),
-    limits = c(-0.09, 0.09)
+    limits = c(-0.09, 0.09) #limits to provide more detail through color variation; Yemen is extreme outlier and made most of the map white
   ) +
   labs(
     title = "Difference in Global Gender Inequality Index (2010–2019)",
