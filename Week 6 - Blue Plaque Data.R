@@ -13,10 +13,15 @@ library(dplyr)
 london_borough <- st_read(here::here("statistical-gis-boundaries-london", "statistical-gis-boundaries-london", "ESRI", "London_Borough_Excluding_MHW.shp"))
 plot(london_borough)
 
+#THIS IS JUST DUE DILLIGENCE, YOU NEVER KNOW IF/WHEN THE DATASET CHANGES/UPDATES
 borough_map <- london_borough%>%
   dplyr::filter(str_detect(GSS_CODE, "^E09"))%>%
-  st_transform(.,27700)
-qtm(borough_map)
+  st_transform(.,27700) #CRs 27700 is British Nat'l Grid
+qtm(borough_map) #qtm stands for "quick thematic map"
 
 #loading in blue plaque data
 blue_plaques <- st_read("https://s3.eu-west-2.amazonaws.com/openplaques/open-plaques-london-2018-04-08.geojson")
+blue_plaques <- blue_plaques%>%
+  st_transform(.,27700)
+
+
