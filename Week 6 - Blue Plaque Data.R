@@ -64,3 +64,5 @@ tm_shape(harrow) +
   tm_polygons(fill_alpha = 0.5) +
 tm_shape(blue_plaques_harrow) +
   tm_dots(fill = "blue", size = 0.1)
+
+#setting a window
