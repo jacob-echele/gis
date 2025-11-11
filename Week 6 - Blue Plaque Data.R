@@ -55,3 +55,12 @@ harrow <- borough_map%>%
 #displays Harrow borough on map
 tm_shape(harrow) +
   tm_polygons(col = NA, fill_alpha = 0.5)
+
+#clipping so that blue_plaque data from ONLY Harrow displays on map
+blue_plaques_harrow <- blue_plaques[harrow, ]
+
+#mapping bluq_plaques_harrow within harrow map
+tm_shape(harrow) +
+  tm_polygons(fill_alpha = 0.5) +
+tm_shape(blue_plaques_harrow) +
+  tm_dots(fill = "blue", size = 0.1)
