@@ -24,4 +24,10 @@ blue_plaques <- st_read("https://s3.eu-west-2.amazonaws.com/openplaques/open-pla
 blue_plaques <- blue_plaques%>%
   st_transform(.,27700)
 
+#plotting blue plaques on map
+tmap_mode("plot)") #static map
+tm_shape(borough_map) + 
+  tm_polygons(fill_alpha = 0.5) + #alpha = transparency
+tm_shape(blue_plaques) + #fillin with blue plaque data
+  tm_dots(fill = "blue", size = 0.1) #symbol shape(color, size)
 
