@@ -2,6 +2,8 @@ install.packages("spatstat")
 install.packages("sp")
 install.packages("fpc")
 install.packages("dbscan")
+install.packages("ggspatial")
+install.packages("prettymapr")
 library(spatstat)
 library(here)
 library(sp)
@@ -14,6 +16,8 @@ library(tidyverse)
 library(fpc) #for DBSCAN analysis
 library(dbscan)
 library(ggplot2)
+library(ggspatial) #for mapping convex polygon shapes
+library(prettymapr)
 
 #loading in London Borough Spatial Data
 london_borough <- st_read(here::here("statistical-gis-boundaries-london", "statistical-gis-boundaries-london", "ESRI", "London_Borough_Excluding_MHW.shp"))
@@ -175,6 +179,7 @@ K_test_values <- as.data.frame(Kest(blue_plaques_harrow_sub_ppp, correction = "R
   #where the value of K (Kpois(r)) falls above the line (Kbord(r)), the data appear to be clustered at that distance
   #where the value of K is below the line, the data are dispersed
   #in this case, data is clustered until about 1300m and then is random and dispersed from 1600-2100m
+  #height of clustering is ~700m
 
 ######################
 #   DBSCAN Analysis
@@ -193,6 +198,47 @@ harrow_dbscan <- blue_plaques_harrow_sub_points%>%
 #y = eps (epsilon) = radius (meters, in this case) within which the algorithm should search for clusters
 #z = minimum no. of points that should be considered a cluster
 
+#plotting DBSCAN analysis
 plot(harrow_dbscan, blue_plaques_harrow_sub_points, main = "DBSCAN Output - Harrow", frame = TRUE)
 plot(borough_map$geometry, add = TRUE)
 
+############################################
+#   USING kNNdisplot TO FIND BEST EPSILON
+############################################
+blue_plaques_harrow_sub_points%>%
+  dbscan::kNNdistplot(., k = 4)
+  #use the "knee" for epsilon (eps) in fpc::dbscan function
+  #the knee is the point on the graph where a sharp change occurs along the k-distance curve
+  #in this case, about 700m
+
+#######################################
+#   CREATING BETTER MAP FOR CLUSTERS
+#######################################
+  #also going to be adding convex polygons enclosing all the points in each cluster
+
+blue_plaques_harrow_sub_points <- blue_plaques_harrow_sub_points%>%
+  mutate(dbcluster = harrow_dbscan$cluster) #adds column showing which cluster every blue plaque belongs to
+
+#convert to sf for mapping purposes
+blue_plaques_harrow_sub_points_sf <- st_as_sf(blue_plaques_harrow_sub_points, #conversion from st to sf
+                                              coords = c("coords.x1", "coords.x2"), #columns from blue_plaques_harrow_sub_points
+                                              crs = 27700) #british nat'l grid CRS
+
+#making polygons
+convex_polygons <- blue_plaques_harrow_sub_points_sf%>%
+  filter(dbcluster>0)%>% #removing any points not in a cluster; cluster >= 1
+  group_by(dbcluster)%>% #keeping clusters together; 1s, 2s, 3s, etc. together
+  summarize(geometry = st_combine(geometry))%>% #combining the blue plaque points
+  mutate(geometry= st_convex_hull(geometry))%>% #creating convex polygons
+  st_as_sf() #converting to sf
+
+#creating map with polygons
+ggplot() +
+  annotation_map_tile(zoom = 13) + #higher the zoom level, more close up the map will be
+  geom_sf(data = blue_plaques_harrow_sub_points_sf, aes(color=dbcluster), size = 3) + #colors the points based on their cluster; aes = "aesthetic"
+  geom_sf(data = convex_polygons, aes(fill = dbcluster), #colors the polygons based on their cluster
+          alpha = 0.5,
+          color = NA, #removes the border lines of the polygons
+          show.legend = FALSE) #hides legend for polygons b/c the colors already shows the different clusters
+
+theme_bw()
