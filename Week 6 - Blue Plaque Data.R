@@ -241,7 +241,7 @@ convex_polygons <- blue_plaques_harrow_sub_points_sf%>%
   mutate(geometry= st_convex_hull(geometry))%>% #creating convex polygons
   st_as_sf() #converting to sf
 
-#creating map with polygons
+#creating map with polygons USING GGSPATIAL PACKAGE
 ggplot() +
   annotation_map_tile(zoom = 13) + #higher the zoom level, more close up the map will be
   geom_sf(data = blue_plaques_harrow_sub_points_sf, aes(color=dbcluster), size = 3) + #colors the points based on their cluster; aes = "aesthetic"
