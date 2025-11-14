@@ -1,5 +1,7 @@
 install.packages("spatstat")
 install.packages("sp")
+install.packages("fpc")
+install.packages("dbscan")
 library(spatstat)
 library(here)
 library(sp)
@@ -9,6 +11,9 @@ library(tmaptools)
 library(stringr)
 library(dplyr)
 library(tidyverse)
+library(fpc) #for DBSCAN analysis
+library(dbscan)
+library(ggplot2)
 
 #loading in London Borough Spatial Data
 london_borough <- st_read(here::here("statistical-gis-boundaries-london", "statistical-gis-boundaries-london", "ESRI", "London_Borough_Excluding_MHW.shp"))
@@ -137,10 +142,57 @@ xlab = "Number of Blue Plaques (Red = Observed, Blue = Expected)",
   main = "Observed vs. Expected Values - Blue Plaques in Harrow")
 points(quad_count_table$Freqquadrantcount, #selecting observed values
        col = "red",
-       type = "o", #"overplotted points and lines"; https://www.datacamp.com/doc/r/line for full list for Line Charts in R
+       type = "o", #"overplotted points and lines"; https://www.datacamp.com/doc/r/line for full list of options for Line Charts in R
        lwd = 3) #line width
 points(quad_count_table$Expected, #selecting expected values
        col = "blue",
        type = "o",
        lwd = 3)
+
+#######################
+#   CHI-SQUARED TEST
+#######################
+test_stats <- quadrat.test(blue_plaques_harrow_sub_ppp, nx = 6, ny = 6, method = "Chisq")
+#produces p-value of 0.25939 impying complete spatial randomness (CSR, NOT to be confused with CRS)
+
+#plotting Chi-Squared
+plot(blue_plaques_harrow_sub_ppp, pch = 16, cex = .5, main = "Chi-Squared: Blue Plauqes - Harrow") #original Harrow map w/ blue plaque points
+  plot(blue_plaques_harrow_sub_ppp, add = TRUE, col = "blue") #turning points blue
+plot(test_stats, add = TRUE, col = "red") #adding chi-squared to map
+
+######################
+#   Ripley's K Test
+######################
+#tells us if data is clustering or if it is dispersed and random
+K_test <- blue_plaques_harrow_sub_ppp%>% #calculates the average density of points for a circle w/ radius r
+  Kest(., correction = "border")%>%
+  plot()
+
+#turning Ripley's K into a df
+K_test_values <- as.data.frame(Kest(blue_plaques_harrow_sub_ppp, correction = "Ripley"))
+  #Kpois(r) = theoretical value of K for each distance window (r) under a Poisson assumption of Complete Spatial Randomness
+  #Kbord(r) or the black line = estimated values of K accounting for the effects of the edge of the study area
+  #where the value of K (Kpois(r)) falls above the line (Kbord(r)), the data appear to be clustered at that distance
+  #where the value of K is below the line, the data are dispersed
+  #in this case, data is clustered until about 1300m and then is random and dispersed from 1600-2100m
+
+######################
+#   DBSCAN Analysis
+######################
+#tells us WHERE in the area of interest the data clustering is occurring
+
+#extracting points from the spatial points df
+blue_plaques_harrow_sub_points <- blue_plaques_harrow_sub%>%
+  coordinates(.)%>%
+  as.data.frame()
+
+#running analysis
+harrow_dbscan <- blue_plaques_harrow_sub_points%>%
+  fpc::dbscan(., 700, MinPts = 4) 
+#fpc::dbscan(x, y, z);
+#y = eps (epsilon) = radius (meters, in this case) within which the algorithm should search for clusters
+#z = minimum no. of points that should be considered a cluster
+
+plot(harrow_dbscan, blue_plaques_harrow_sub_points, main = "DBSCAN Output - Harrow", frame = TRUE)
+plot(borough_map$geometry, add = TRUE)
 
