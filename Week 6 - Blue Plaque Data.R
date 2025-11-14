@@ -26,7 +26,7 @@ blue_plaques <- blue_plaques%>%
   st_transform(.,27700)
 
 #plotting blue plaques on map
-tmap_mode("plot)") #static map
+tmap_mode("plot") #static map
 tm_shape(borough_map) + 
   tm_polygons(fill_alpha = 0.5) + #alpha = transparency
 tm_shape(blue_plaques) + #fillin with blue plaque data
@@ -35,7 +35,7 @@ tm_shape(blue_plaques) + #fillin with blue plaque data
 #getting rid of duplicate data values
 blue_plaques <- distinct(blue_plaques)
 
-#selectung only points within London borough boundaries
+#selecting only points within London borough boundaries
 blue_plaques_sub <- blue_plaques[borough_map, ]
 
 #mapping the new blue_plaques_sub data
@@ -65,4 +65,29 @@ tm_shape(harrow) +
 tm_shape(blue_plaques_harrow) +
   tm_dots(fill = "blue", size = 0.1)
 
-#setting a window
+#setting a window to start analysis (spatstat requires a window for ppp)
+window <- as.owin(harrow)
+plot(window)
+
+#converting blue_plaques_sub to sp object suitable for spatstat ppp analysis
+blue_plaques_harrow_sub <- blue_plaques_harrow%>%
+  as(., "Spatial") #'.' means "take all current data and turn it 'spatial'
+
+#starting ppp analysis
+blue_plaques_harrow_sub_ppp <- ppp(x = blue_plaques_harrow_sub@coords[,1], #means "all rows, first column (x)
+                            y = blue_plaques_harrow_sub@coords[,2], #means "all rows, second column (y)
+                            window = window) #uses window of harrow from line 69
+#PLOTTING; pch = plotted point shape, 25 options (1-25); 
+#cex = character expansion aka plotted point size, 1 = default, 0.5 = half, 2 = double;
+#main = title text
+plot(blue_plaques_harrow_sub_ppp, pch = 16, cex = .5, main = "Blue Plaques - Harrow", cols = "blue") 
+
+#plotting Kernel Density Estimation
+blue_plaques_harrow_sub_ppp%>%
+  density(., sigma = 500)%>%  #'.' means "use all current data", blue_plaques_harrow_sub_ppp;
+  #sigma = the spread of the heat map around the point in units as CRS (meters in this case),
+  # sigma = 100 (small), sigma = 500 (medium), sigma = 1000 (large)
+  plot(., main = "Kernel Density Estimation - Harrow Blue Plaques")
+
+
+
