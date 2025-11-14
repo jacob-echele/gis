@@ -56,8 +56,12 @@ tm_shape(blue_plaques_sub) + #fillin with blue plaque data
 #creates new df with just plaque values that fall within borough_map boundaries
 intersect_indices <-st_intersects(borough_map, blue_plaques) 
 
-#performing Ripley's K analysis on ONE borough
+####################################################
+#   PERFORMING RIPLEY'S K ANALYSIS ON ONE BOROUGH
+####################################################
 #this is because it requires a lot of computing power, too many points may tank the analysis
+
+#selecting Harrow borough b/c it has a manageable amount of bluq plaque points
 harrow <- borough_map%>%
   filter(., NAME == "Harrow")
 
@@ -82,7 +86,9 @@ plot(window)
 blue_plaques_harrow_sub <- blue_plaques_harrow%>%
   as(., "Spatial") #'.' means "take all current data and turn it 'spatial'
 
-#starting ppp analysis
+############################
+#   STARTING PPP ANALYSIS
+############################
 blue_plaques_harrow_sub_ppp <- ppp(x = blue_plaques_harrow_sub@coords[,1], #means "all rows, first column (x)
                             y = blue_plaques_harrow_sub@coords[,2], #means "all rows, second column (y)
                             window = window) #uses window of harrow from line 69
@@ -98,7 +104,10 @@ blue_plaques_harrow_sub_ppp%>%
   # sigma = 100 (small), sigma = 500 (medium), sigma = 1000 (large)
   plot(., main = "Kernel Density Estimation - Harrow Blue Plaques")
 
-#QUADRAT ANALYSIS
+#######################
+#   QUADRAT ANALYSIS
+#######################
+
 #plot Quadrat Analysis (counted number of points within grided window) ("?quadratcount.ppp" for help)
 blue_plaques_harrow_sub_ppp%>%
   quadratcount(., nx = 6, ny = 6)%>% #nx= no. of horizontal squares, ny = no. of vertical squares
