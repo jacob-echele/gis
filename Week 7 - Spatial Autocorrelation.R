@@ -2,11 +2,12 @@ library(here)
 library(janitor)
 library(sf)
 library(tidyverse)
+library(tidyr)
 library(tmap)
 library(stringr)
 library(dplyr)
 library(spdep)
-install.packages("RColorBrewer")
+library(RColorBrewer)
 
 #read the ward data in
 #Geographic London Ward Data
@@ -203,3 +204,106 @@ points_sf_joined <- points_sf_joined %>%
 
 #setting breaks
 breaks1<-c(-1000,-2.58,-1.96,-1.65,1.65,1.96,2.58,1000)
+
+#full map
+tm_shape(points_sf_joined) +
+  tm_polygons(
+    fill = "plaque_count_Iz",
+    fill.scale = tm_scale_intervals(values = "brewer.br_bg",
+                                    midpoint = "NA",
+                                    style = "fixed",
+                                    breaks=breaks1),
+    fill.legend = tm_legend(title="Local Moran's I, Blue Plaques in London",
+                            title.size=0.85,
+                            size=0.8,
+                            # plot outside of the main map
+                            #explained below
+                            position=tm_pos_out("right", 
+                                                "center",
+                                                pos.v = "center")))
+# MAP SHOWS: some areas in the center of London have relatively high schores, indicating areas with lots of blue
+# plaques neighboring other areas with lots of blue plaques
+
+###################################################################################
+#   LOCAL GETIS ORD (HOW MANY SDs A VALUE IS FROM THE MEAN (OF EXPECTED VALUES))
+###################################################################################
+
+#generate D for each ward
+Gi_LWard_Local_Density <- points_sf_joined %>%
+  pull(density) %>%
+  as.vector() %>%
+  localG(., Lward.lw)
+
+head(Gi_LWard_Local_Density)
+
+#add local G to points_sf_joined
+points_sf_joined <- points_sf_joined %>%
+  mutate(density_G = as.numeric(Gi_LWard_Local_Density))
+
+# -----------------------------
+#    MAPPING LOCAL GETIS ORD
+# -----------------------------
+
+tm_shape(points_sf_joined) +
+  tm_polygons(
+    fill = "density_G",
+    fill.scale = tm_scale_intervals(values = "brewer.br_bg",
+                                    midpoint = "NA",
+                                    style = "fixed",
+                                    breaks=breaks1),
+    fill.legend = tm_legend(title="Gi*, Blue Plaques in London",
+                            title.size=0.85,
+                            size=0.8,
+                            # plot outside of the main map
+                            #explained below
+                            position=tm_pos_out("right", 
+                                                "center",
+                                                pos.v = "center")))
+
+#######################################
+#   AUTOCORRELATION WITH GCSE SCORES
+#######################################
+
+#seeing what other variables are in the data file
+slice_head(points_sf_joined, n=2)
+
+#shows class of each column; need to drop geometry
+Datatypelist <- LondonWardsMerged %>% 
+  st_drop_geometry()%>% #drop geometry
+  summarise_all(class) %>%
+  pivot_longer(everything(), 
+               names_to="All_variables", 
+               values_to="Variable_class")
+
+Datatypelist #shows classes
+
+#local Moran's I for GCSE scores
+I_LWard_Local_GCSE <- LondonWardsMerged %>%
+  arrange(GSS_CODE)%>%
+  pull(average_gcse_capped_point_scores_2014) %>%
+  as.vector()%>%
+  localmoran(., Lward.lw)%>%
+  as_tibble()
+
+points_sf_joined <- points_sf_joined %>%
+  arrange(gss_code)%>%
+  mutate(GCSE_LocIz = as.numeric(I_LWard_Local_GCSE$Z.Ii))
+
+# ---------------------------------------
+#   MAPPING OF LOCAL I FOR GCSE SCORES
+# ---------------------------------------
+tm_shape(points_sf_joined) +
+  tm_polygons(
+    fill = "GCSE_LocIz",
+    fill.scale = tm_scale_intervals(values = "brewer.br_bg",
+                                    midpoint = "NA",
+                                    style = "fixed",
+                                    breaks=breaks1),
+    fill.legend = tm_legend(title="Local Moran's I, GCSE Scores",
+                            title.size=0.85,
+                            size=0.8,
+                            # plot outside of the main map
+                            #explained below
+                            position=tm_pos_out("right", 
+                                                "center",
+                                                pos.v = "center")))
